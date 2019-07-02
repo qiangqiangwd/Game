@@ -8,9 +8,9 @@ let Game = null;
 // 开始进行初始化
 Game = new GameInit();
 
-if (module.hot) {
-    module.hot.accept('./utils/init.js', function () {
-        document.body.removeChild(publicOptions.outerElement); // 先清除在重新添加
-        Game = new GameInit();
-    });
-}
+// if (module.hot) {
+//     module.hot.accept('./utils/init.js', function () {
+//         document.body.removeChild(publicOptions.outerElement); // 先清除在重新添加
+//         Game = new GameInit();
+//     });
+// }

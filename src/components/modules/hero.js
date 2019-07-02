@@ -40,10 +40,11 @@ class Hero {
         // let _w = opts.map.wallWH; // 墙体的宽高
         let heroAttr = opts.hero; // 英雄的基本属性
 
-        let arr = move.collideJudgment(this.movePos[0], this.movePos[1], type, heroAttr); // 获取新的位置
+        let posObj = move.collideJudgment(this.movePos[0], this.movePos[1], type, heroAttr); // 获取新的位置
 
-        this.wallCanvas.move(...arr, heroAttr.width, heroAttr.height); // 画布上移动
-        this.movePos = arr; // 保存当前位置
+        this.wallCanvas.move(...posObj.pos, heroAttr.width, heroAttr.height); // 画布上移动
+        this.movePos = posObj.pos; // 保存当前位置
+        // console.log('当前类型;',posObj.mapType)
     }
 }
 

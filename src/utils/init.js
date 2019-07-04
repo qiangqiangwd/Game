@@ -25,6 +25,10 @@ class GameInit {
         let element = document.createElement('div');
         element.classList.add('hello'); // 给该dom元素添加 class
         element.setAttribute('id', 'Game'); //  最外层添加 id Game
+        // 生成一个用于存放其他信息的盒子
+        let infoElem = document.createElement('div');
+        infoElem.classList.add('otherInfo');
+        element.appendChild(infoElem);
         document.body.appendChild(element); // body中添加最外层
 
         publicOptions.outerElement = element; // 保存最外层盒子

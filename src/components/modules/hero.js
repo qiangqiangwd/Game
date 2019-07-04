@@ -13,14 +13,15 @@ class Hero {
         this.wallCanvas = new Canvas({
             id: 'Hero'
         });
+        // 在之后生成人物相关信息
 
         /**
          *  === 初始的一些参数 ===
          */
         // 初始位置（第几行几列的位置，0 开始）
         this.initPos = {
-            row: 0, // 行
-            col: 0, // 列
+            row: 3, // 行
+            col: 7, // 列
         };
 
         this.drawHero();
@@ -43,8 +44,12 @@ class Hero {
         let posObj = move.collideJudgment(this.movePos[0], this.movePos[1], type, heroAttr); // 获取新的位置
 
         this.wallCanvas.move(...posObj.pos, heroAttr.width, heroAttr.height); // 画布上移动
-        this.movePos = posObj.pos; // 保存当前位置
+        this.movePos = posObj.pos; // 保存当前位置（左上坐标，非中心点）
         // console.log('当前类型;',posObj.mapType)
+    }
+    // 人物受伤后的表现【参数为：伤害量】
+    youGeturt(attack){
+        opts.hero.blood -= attack; // 减少血量
     }
 }
 

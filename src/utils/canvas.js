@@ -1,10 +1,22 @@
 
 import publicOptions from '../utils/public'; // 公共参数的地方
+import mapWallOptions from '../utils/mapWallOptions'; // 地图公共参数的地方
 
 // 加载的图片部分
 import road from '../image/wall/road.jpg' // 草地
 import wall from '../image/wall/wall2.jpg' // 墙
 
+// 循环生成动画所调用的函数
+let RAF = (function () {
+    return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function (callback) {
+            window.setTimeout(callback, 1000 / 60);
+        }
+})();
 class Canvas {
     constructor(options = {}) {
         this.options = options;
@@ -20,7 +32,7 @@ class Canvas {
         let boxOpt = publicOptions;
         // 重新生成一个 canvas 且赋予相应的 id ,在插入总盒子的后方
         let ele = document.createElement('canvas');
-        ele.setAttribute('id', id);
+        ele.setAttribute('name', id); // 每个画布的名字
         ele.setAttribute('width', boxOpt.width);
         ele.setAttribute('height', boxOpt.height);
         boxOpt.outerElement && boxOpt.outerElement.appendChild(ele);
@@ -29,6 +41,19 @@ class Canvas {
         // let canvas = document.getElementById('tutorial');
         this.ctx = ele.getContext('2d');
 
+        // // 取消动画
+        // this.cancelAnimation = function () {
+        //     return window.cancelRequestAnimationFrame ||
+        //         window.webkitCancelRequestAnimationFrame ||
+        //         window.mozCancelRequestAnimationFrame ||
+        //         window.oCancelRequestAnimationFrame ||
+        //         window.msCancelRequestAnimationFrame
+        // };
+
+    }
+    // 清空画布
+    clearCanvas() {
+        this.ctx.clearRect(0, 0, publicOptions.width, publicOptions.height); // 先清除原有在进行填充
     }
     // 绘制地图部分
     // x轴、y轴、宽度、高度、类型
@@ -69,7 +94,7 @@ class Canvas {
         let ctx = this.ctx;
         ctx.textAlign = 'center';
 
-        ctx.clearRect(0, 0, publicOptions.width, publicOptions.height); // 先清除原有在进行填充
+        this.clearCanvas(); // 先清除原有在进行填充
         //  循环生成炸弹
         bombArr.forEach(item => {
             // 外边圆
@@ -88,24 +113,105 @@ class Canvas {
             ctx.stroke();
         });
     }
-    // 爆炸效果
-    boomStyle(x, y, r,callback) {
+    // 爆炸效果【爆炸宽高还是以每格墙壁宽高为基准】
+    boomStyle(bombOpt, checkFun, callback) {
+        // 现货区对应的详情
+        let [x, y, r] = [
+            bombOpt.x, bombOpt.y, bombOpt.radius
+        ];
+
         let wh = r * 2;
+        let wallWH = publicOptions.map.wallWH; // 墙的宽高度
         let ctx = this.ctx;
+        let map = mapWallOptions[publicOptions.map.level - 1].allContentArr; //当前所在map 总的类型数据
         ctx.clearRect(x - r, y - r, wh, wh); // 清除对应部分的圆 
 
-        ctx.fillStyle = "#f9f702";
+        let gride = 11; // 爆炸的范围（以自己为中心，单位：格）
+        let allWidth = wallWH * gride;
+        // 3 1/3   5  2/5  7  3/7
+        let slot = allWidth * (Math.floor(gride / 2) / gride);
+        let slotNum = Math.floor(gride / 2);
 
-        let index = 0;
-        let timer = setInterval(() => {
-            ctx.fillRect(x - r, y - r, index, wh);
-            ctx.fill();
-            index++;
-            if (index >= publicOptions.map.wallWH * 3) { // 3格范围
-                clearInterval(timer);
-                callback && callback();
+
+        // 立即发生爆炸
+        let opacity = 1;
+
+        /**
+         * 当爆炸碰到墙壁（后续可能会加判断？）时停止
+         */
+        // 中心点的行列位置
+        let posArr = [
+            Math.floor(y / wallWH), // 行
+            Math.floor(x / wallWH), // 列
+        ];
+        // 注：x - r 其中x是中心点的坐标，可以由此判断出当前所在的格子坐标
+        let setPosition = {
+            // 横线部分
+            x1: x - r - slot, // 最右的x坐标
+            y1: y - r, // y坐标
+            w1: allWidth, // 显示总的长度
+            // 竖线部分
+            x2: x - r, //  x坐标
+            y2: y - r - slot, // 最上的y坐标
+            w2: allWidth, // 显示总的长度
+        }
+
+        //  获取爆炸所显示的范围坐标
+        for (let i = 0; i < 11; i++) {
+            let addRow = posArr[0] - slotNum + i; // 行
+            let delCol = posArr[1] - slotNum + i; // 列
+            // 横线部分
+            if (delCol < 0 || map[posArr[0]][delCol] == 2) { // 不包含本格的下一个格子
+                if (delCol < posArr[1]) { // 在中心点之前
+                    setPosition.x1 = (delCol + 1) * wallWH;
+                    setPosition.w1 = (11 - i - 1) * wallWH;
+                } else {
+                    setPosition.w1 = delCol * wh - setPosition.x1;
+                }
             }
-        }, 20);
+            // // 竖线部分
+            if (addRow < 0 || map[addRow][posArr[1]] == 2) { // 不包含本格的下一个格子
+                // setPosition.y2 = (addRow + 1) * wh;
+                // setPosition.w2 = (11 - i - 1) * wallWH;
+                if (addRow < posArr[0]) { // 在中心点之上
+                    setPosition.y2 = (addRow + 1) * wallWH;
+                    setPosition.w2 = (11 - i - 1) * wallWH;
+                } else {
+                    setPosition.w2 = addRow * wh - setPosition.y2;
+                }
+            }
+        }
+
+        checkFun(setPosition, wallWH, bombOpt); // 爆炸影响检测函数
+
+        // 横线生成（需判断当前地图是否有墙的存在）
+        // 延时展开
+        let timer = () => {
+            ctx.fillStyle = `rgba(254,225,0,${opacity})`; // ${1 - index / allWidth}
+            // 横线生成（需判断当前地图是否有墙的存在）
+            // 注：x - r 其中x是中心点的坐标，可以由此判断出当前所在的格子坐标
+
+            ctx.clearRect(setPosition.x1, setPosition.y1, setPosition.w1, wh); // 清除对应部分
+            ctx.beginPath();
+            ctx.fillRect(setPosition.x1, setPosition.y1, setPosition.w1, wh);
+            ctx.closePath();
+            // 竖线生成 
+            ctx.beginPath();
+            ctx.clearRect(setPosition.x2, setPosition.y2, wh, setPosition.w2); // 清除对应部分
+            ctx.fillRect(setPosition.x2, setPosition.y2, wh, setPosition.w2);
+            ctx.closePath();
+            ctx.fill();
+
+            opacity -= 0.01;
+            if (opacity < 0) { //透明度为0时消失
+                // 半秒后爆炸消失
+                callback && callback();
+            } else {
+                RAF(timer);
+            }
+        };
+
+        RAF(timer);
     }
 }
 

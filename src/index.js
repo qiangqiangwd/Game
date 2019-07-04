@@ -6,7 +6,9 @@ import publicOptions from './utils/public'; // 公共参数的地方
 
 let Game = null;
 // 开始进行初始化
-Game = new GameInit();
+window.Game = new GameInit();
+
+let cccccc = 123456;
 
 // if (module.hot) {
 //     module.hot.accept('./utils/init.js', function () {

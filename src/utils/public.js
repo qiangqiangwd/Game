@@ -16,7 +16,7 @@ export default {
     hero:{
         level:1, // 等级
         blood:10, // 血量
-        speed:1, // 移动速度
+        speed:3, // 移动速度
         attack:1, // 攻击力
         width:0, // 宽度 （默认 人物的宽高和墙体宽高一致）
         height:0, // 高度

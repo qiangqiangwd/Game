@@ -179,7 +179,7 @@ export default {
             }
 
         } else {
-            y = opts.height;
+            y = opts.height - _h;
         }
         return {
             pos: [x, y],
@@ -236,6 +236,8 @@ export default {
             } else {
                 x = XL - _w;
             }
+        }else{
+            x = opts.width - _w;
         }
         return {
             pos: [x, y],

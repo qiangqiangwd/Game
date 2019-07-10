@@ -14,7 +14,7 @@ import wallJson from '../../utils/mapWallOptions'; // 地图数据
 class wall {
     constructor(options = {}) {
         this.options = options;
-        let id = options.id || 'Wall'
+        let id = options.id || 'Wall';
 
         // 生成墙
         this.wallCanvas = new Canvas({

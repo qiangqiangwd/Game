@@ -7,7 +7,7 @@ import road from '../image/wall/road.jpg' // 草地
 import wall from '../image/wall/wall2.jpg' // 墙
 
 // 循环生成动画所调用的函数
-let RAF = (function () {
+const RAF = (function () {
     return window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame ||
@@ -72,18 +72,48 @@ class Canvas {
         ctx.clearRect(x, y, w, h); // 先清除原有在进行填充
         ctx.fillRect(x, y, w, h);
     }
-    drawHero(x, y, w, h) {
+    drawHero(x, y, w, h, color = '0,0,0,1') {
         let ctx = this.ctx;
         // 也可以用颜色填充
-        ctx.fillStyle = "#000000";
+        ctx.beginPath();
         ctx.clearRect(x, y, w, h); // 先清除原有在进行填充
+        ctx.fillStyle = `rgba(${color})`;
         ctx.fillRect(x, y, w, h);
+        ctx.closePath();
+    }
+    drawMonster(posArr, w, h, color = '204,0,0,1') {
+        let ctx = this.ctx;
+
+        this.clearCanvas(); // 清空画布
+        posArr.forEach(item => {
+            // 也可以用颜色填充
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(${color})`;
+            ctx.arc(item[0] + 5, item[1] + 5, 5, 0, Math.PI * 2);//绘制圆形
+            // ctx.fillText(10, item[0], item[1] + 5); // 进行绘制
+            // ctx.fillRect(item[0], item[1], w, h);
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+    // 受伤
+    heroGetHurt(x, y, w, h) {
+        let index = 0;
+        let hurt = () => {
+            this.drawHero(x, y, w, h, `147, 0, 8, ${index}`);
+            if (index < 1) {
+                index += 0.01;
+                RAF(hurt);
+            } else {
+                this.drawHero(x, y, w, h);
+            }
+        }
+        RAF(hurt);
     }
     // 移动
     move(x, y, w, h) {
         let ele = this.ele;
         this.ctx.clearRect(0, 0, ele.width, ele.height);
-        // this.ctx.translate(x, y);
         this.drawHero(x, y, w, h); // 先清空画布后在重新绘制图形在重新绘制
     }
     /**
@@ -93,6 +123,7 @@ class Canvas {
     drawBomb(bombArr) {
         let ctx = this.ctx;
         ctx.textAlign = 'center';
+        // console.log(JSON.parse(JSON.stringify(bombArr)));
 
         this.clearCanvas(); // 先清除原有在进行填充
         //  循环生成炸弹
@@ -103,6 +134,7 @@ class Canvas {
             ctx.strokeStyle = "#ca0c16"; // 边框颜色
             ctx.fillStyle = "#ca0c16"; // 填充颜色
             ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);//绘制圆形
+            ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
@@ -110,6 +142,7 @@ class Canvas {
             ctx.beginPath();
             ctx.fillStyle = "#ffffff"; // 文字填充颜色
             ctx.fillText(item.timer, item.x, (item.y + item.radius)); // 进行绘制
+            ctx.closePath();
             ctx.stroke();
         });
     }
@@ -124,9 +157,9 @@ class Canvas {
         let wallWH = publicOptions.map.wallWH; // 墙的宽高度
         let ctx = this.ctx;
         let map = mapWallOptions[publicOptions.map.level - 1].allContentArr; //当前所在map 总的类型数据
-        ctx.clearRect(x - r, y - r, wh, wh); // 清除对应部分的圆 
+        // ctx.clearRect(x - r, y - r, wh, wh); // 清除对应部分的圆 
 
-        let gride = 11; // 爆炸的范围（以自己为中心，单位：格）
+        let gride = bombOpt.bombRange; // 爆炸的范围（以自己为中心，单位：格）
         let allWidth = wallWH * gride;
         // 3 1/3   5  2/5  7  3/7
         let slot = allWidth * (Math.floor(gride / 2) / gride);
@@ -157,11 +190,12 @@ class Canvas {
         }
 
         //  获取爆炸所显示的范围坐标
-        for (let i = 0; i < 11; i++) {
+        for (let i = 0; i < gride; i++) {
             let addRow = posArr[0] - slotNum + i; // 行
             let delCol = posArr[1] - slotNum + i; // 列
+
             // 横线部分
-            if (delCol < 0 || map[posArr[0]][delCol] == 2) { // 不包含本格的下一个格子
+            if (delCol < 0 || delCol > 29 || map[posArr[0]][delCol] == 2) { // 不包含本格的下一个格子
                 if (delCol < posArr[1]) { // 在中心点之前
                     setPosition.x1 = (delCol + 1) * wallWH;
                     setPosition.w1 = (11 - i - 1) * wallWH;
@@ -170,9 +204,7 @@ class Canvas {
                 }
             }
             // // 竖线部分
-            if (addRow < 0 || map[addRow][posArr[1]] == 2) { // 不包含本格的下一个格子
-                // setPosition.y2 = (addRow + 1) * wh;
-                // setPosition.w2 = (11 - i - 1) * wallWH;
+            if (addRow < 0 || addRow > 29 || map[addRow][posArr[1]] == 2) { // 不包含本格的下一个格子
                 if (addRow < posArr[0]) { // 在中心点之上
                     setPosition.y2 = (addRow + 1) * wallWH;
                     setPosition.w2 = (11 - i - 1) * wallWH;
@@ -190,9 +222,9 @@ class Canvas {
             ctx.fillStyle = `rgba(254,225,0,${opacity})`; // ${1 - index / allWidth}
             // 横线生成（需判断当前地图是否有墙的存在）
             // 注：x - r 其中x是中心点的坐标，可以由此判断出当前所在的格子坐标
-
-            ctx.clearRect(setPosition.x1, setPosition.y1, setPosition.w1, wh); // 清除对应部分
             ctx.beginPath();
+            ctx.clearRect(setPosition.x1, setPosition.y1, setPosition.w1, wh); // 清除对应部分
+            // ctx.globalCompositeOperation = 'source-in';
             ctx.fillRect(setPosition.x1, setPosition.y1, setPosition.w1, wh);
             ctx.closePath();
             // 竖线生成 
@@ -204,7 +236,6 @@ class Canvas {
 
             opacity -= 0.01;
             if (opacity < 0) { //透明度为0时消失
-                // 半秒后爆炸消失
                 callback && callback();
             } else {
                 RAF(timer);

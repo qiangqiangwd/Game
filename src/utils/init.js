@@ -15,6 +15,8 @@ class GameInit {
         this.wall = new modules.wall();
         // 生成英雄人物
         this.hero = new modules.hero();
+        // 初始化怪兽
+        this.monster = new modules.monster();
         // 初始化炸弹部分
         this.bomb = new modules.bomb();
 

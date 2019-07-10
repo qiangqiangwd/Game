@@ -19,7 +19,7 @@ class bomb {
         let hero = opts.hero;
         let [hW, hH] = [hero.width, hero.height];
         let bombObj = {
-            x: x + (hW / 2),
+            x: x + (hW / 2), // 圆心位置
             y: y + (hH / 2),
             timer: 2, // 爆炸剩余时间
             // radius: (hW * 0.8) / 2, // 半径为人物宽度0.8倍的一半
@@ -37,26 +37,24 @@ class bomb {
                 this.bombCanvas.drawBomb(this.bombArr); // 重新绘制
             } else {
                 this.deletOneById(bombObj);
-                clearInterval(underTime);
             }
         }, 1000);
         bombObj.underTime = underTime; // 保存当前计时器（后面清空时会用）
-        // 炸弹均默认 4s 后爆炸
+        // 添加到数组中
         this.bombArr.push(bombObj);
         this.bombCanvas.drawBomb(this.bombArr); // 创建一个
     }
     // 删除其中一个炸弹【在外体现为爆炸】
     deletOneById(bombOpt) {
-        let _this = this;
         let arr = this.bombArr;
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].id == bombOpt.id) {
+                clearInterval(bombOpt.underTime); // 先暂停计时
+                this.bombArr.splice(i, 1); // 先删除该条数据
                 // 在爆炸完后刷新下现有炸弹
                 this.bombCanvas.boomStyle(bombOpt, this.checkBoomEffect.bind(this), () => {
                     this.bombCanvas.drawBomb(this.bombArr); // 重新绘制
                 }); //爆炸效果及炸弹消失
-
-                this.bombArr.splice(i, 1); // 删除该条数据
                 break;
             }
         }
@@ -76,12 +74,20 @@ class bomb {
             vMinX: bombPos.x2,
             vMaxX: bombPos.x2 + wh,
         }
+        // 是否含有其他炸弹，有的话会一起爆炸，是兄弟就一起爆炸（不...
+        this.bombArr.forEach(item => {
+            if (this._boomCheck([item.x - opts.hero.width, item.y - opts.hero.height], opts.hero , boomRange)) {
+                this.deletOneById(item);
+            }
+        });
+
         // 人物爆炸时的判断（是否有被炸到）【前面为当前坐标，后面为其他信息、宽高血量等】
         if (this._boomCheck(Game.hero.movePos, opts.hero, boomRange)) {
-            Game.hero.youGeturt(bombOpt.attack);
+            Game.hero.youGetHurt(bombOpt.attack);
         }
     }
     // 是否命中的关键就是双方范围是否有交集
+    // 参数：pos:[x,y],info:width,height,
     _boomCheck(pos, info, boomRange) {
         // debugger
         // x轴范围的，y轴范围

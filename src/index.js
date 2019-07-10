@@ -8,8 +8,6 @@ let Game = null;
 // 开始进行初始化
 window.Game = new GameInit();
 
-let cccccc = 123456;
-
 // if (module.hot) {
 //     module.hot.accept('./utils/init.js', function () {
 //         document.body.removeChild(publicOptions.outerElement); // 先清除在重新添加
